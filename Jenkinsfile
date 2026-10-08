@@ -2,19 +2,18 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = "docker.io/${DOCKER_USERNAME}"
-        IMAGE_NAME = "server-lms-net"
-        SERVER_HOST = "103.20.96.174"
-        SERVER_USER = "root"
+        IMAGE_NAME = "myblazorapp"
+        SERVER_HOST = "192.168.100.211"      // IP server Ubuntu của bạn
+        SERVER_USER = "long"                 // user bạn đang dùng
     }
 
     stages {
         stage('Checkout') {
             steps {
                 checkout([$class: 'GitSCM',
-                    branches: [[name: '*/master']],
+                    branches: [[name: '*/main']],
                     userRemoteConfigs: [[
-                        url: 'https://github.com/XT-xuantruong/learnking.server.git',
+                        url: 'https://github.com/TranBLong/TestProjectJenkins.git',
                         credentialsId: 'github-pat'
                     ]]
                 ])
@@ -45,22 +44,20 @@ pipeline {
                 withCredentials([
                     usernamePassword(credentialsId: 'dockerhub-cred',
                         usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
-                    string(credentialsId: 'db-conn', variable: 'DB_CONN'),
                     file(credentialsId: 'docker-compose-file', variable: 'DOCKER_COMPOSE_PATH')
                 ]) {
                     sshagent (credentials: ['server-ssh-key']) {
                         sh '''
-                        # Copy docker-compose.yml từ Jenkins sang server
+                        # Copy docker-compose.yml sang server
                         scp -o StrictHostKeyChecking=no $DOCKER_COMPOSE_PATH $SERVER_USER@$SERVER_HOST:~/project/docker-compose.yml
 
-                        # SSH vào server để deploy
+                        # Deploy trên server
                         ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "
-                        cd ~/project && \
-                        echo \\"DB_CONNECTION_STRING=$DB_CONN\\" > .env && \
-                        echo \\"$DOCKER_PASS\\" | docker login -u $DOCKER_USER --password-stdin && \
-                        docker compose --env-file .env pull && \
-                        docker compose --env-file .env down && \
-                        docker compose --env-file .env up -d && \
+                        cd ~/project && \\
+                        echo \\"$DOCKER_PASS\\" | docker login -u $DOCKER_USER --password-stdin && \\
+                        docker compose pull && \\
+                        docker compose down && \\
+                        docker compose up -d && \\
                         docker image prune -f
                         "
                         '''
