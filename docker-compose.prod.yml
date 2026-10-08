@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  blazor-app:
+    image: docker.io/<TÊN_DOCKERHUB_CỦA_BẠN>/myblazorapp:latest
+    container_name: myblazorapp
+    restart: always
+    ports:
+      - "8080:80"
